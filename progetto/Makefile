@@ -7,17 +7,21 @@ OBJS=$(SRCS:.c=.o)
 
 all: TriServer TriClient 
 
-TriServer : src/TriServer.o src/SharedMemory.o src/semaphore.o src/errExit.o
+TriServer : src/TriServer.o src/SharedMemory.o src/Segnali.o src/semaphore.o src/errExit.o
 	@echo "Compilazione eseguibile TriServer"
-	@$(CC) src/TriServer.o src/SharedMemory.o src/semaphore.o src/errExit.o -o TriServer
+	@$(CC) src/TriServer.o src/SharedMemory.o src/semaphore.o src/errExit.o src/Segnali.o -o TriServer
 
-TriClient : src/TriClient.o src/SharedMemory.o src/semaphore.o src/errExit.o
+TriClient : src/TriClient.o src/SharedMemory.o src/semaphore.o src/Segnali.o src/errExit.o
 	@echo "Compilazione eseguibile TriClient"
-	@$(CC) src/TriClient.o src/SharedMemory.o src/semaphore.o src/errExit.o -o TriClient 
+	@$(CC) src/TriClient.o src/SharedMemory.o src/semaphore.o src/errExit.o src/Segnali.o -o  TriClient 
 
 src/SharedMemory.o : src/SharedMemory.c inc/SharedMemory.h
 	@echo "Compilazione SharedMemory.o"
 	@$(CC) $(CFLAGS) $(INCLUDES) -c src/SharedMemory.c -o src/SharedMemory.o
+
+src/Segnali.o : src/segnali.c inc/Segnali.h
+	@echo "Compilazione Segnali.o"
+	@$(CC) $(CFLAGS) $(INCLUDES) -c src/segnali.c -o src/Segnali.o
 
 src/semaphore.o : src/semaphore.c inc/semaphore.h 
 	@echo "Compilazione semaphore.o"

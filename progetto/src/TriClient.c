@@ -1,6 +1,7 @@
 #include "../inc/SharedMemory.h"
 #include "../inc/errExit.h"
 #include "../inc/semaphore.h"
+#include "../inc/Segnali.h"
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -27,10 +28,179 @@ int isPc;
  * client si "arrende" e la vincita viene annunciata all'altro client
  *
  */
+
+void Resa();
+void TerminazioneClient(int sig);
+void DrawBoard();
+void AzioneServer(int sig);
+void PcFunction();
+void RoutineChiusura(int signal);
+void CancellaSchermo();
+
+
+int main(int argc, char *argv[]) {
+  if(ModificaFunzioneSegnale(SIGUSR1, TerminazioneClient)==-1)
+  {
+    perror("Errore modifica segnale");
+    RoutineChiusura(-1);
+  }
+  if(ModificaFunzioneSegnale(SIGINT, Resa)==-1)
+  {
+    perror("Errore modifica segnale");
+    RoutineChiusura(-1);
+  }
+  if(ModificaFunzioneSegnale(SIGUSR2, AzioneServer)==-1)
+  {
+    perror("Errore modifica segnale");
+    RoutineChiusura(-1);
+  } 
+  key_t semKey = ftok("test", 0);
+  if(semKey==-1)
+  {
+    perror("Errore creazione chiave");
+    RoutineChiusura(-1);
+  }
+  gioco = LinkSharedBlock("test", sizeof(InfoGioco));
+  if(gioco==NULL)
+  {
+    perror("Errore ricevimento memoria condivisa");
+    RoutineChiusura(-1);
+  }
+  isPc = 0;
+  //controlla se il server è attivo
+  if(gioco->processoServer==0)
+  {
+    perror("Server non attivo");
+    RoutineChiusura(-1);
+  }
+  
+  // controlla se almeno uno dei pidGiocatore della memoria condivisa è uguale
+  // ad 1. Se tutti e 2 sono diversi, allora questo è un terzo client
+  if (gioco->giocatore1.playerProcess != -1 &&
+      gioco->giocatore2.playerProcess != -1) {
+    errExit("Ci sono giò 2 client in esecuzione!");
+    if(UnSharedBlock(gioco)==-1)
+    {
+      perror("Errore distaccamento memoria condivisa");
+      RoutineChiusura(-1);
+    }
+  }
+
+  semaphoreId = semget(semKey, 4, 0644);
+  if(semaphoreId==-1)
+  {
+    perror("Errore ricevimento semafori");
+    Resa();
+  }
+
+  if (gioco->giocatore1.playerProcess == -1) {
+    gioco->giocatore1.playerProcess = getpid();
+    strcpy(gioco->giocatore1.playerName, argv[1]);
+    numGiocatore = 2;
+    gioco->giocatore1.state = 0;
+    
+  } else if (gioco->giocatore2.playerProcess == -1) {
+    gioco->giocatore2.playerProcess = getpid();
+    numGiocatore = 3;
+    gioco->giocatore2.state = 0;
+    strcpy(gioco->giocatore2.playerName, argv[1]);
+  } else {
+    perror("Si è verificato un errore");
+    RoutineChiusura(-1);
+  }
+  if(semOp(semaphoreId, 1, 1)==-1)
+  {
+    perror("Errore operazione semafori");
+    RoutineChiusura(-1);
+  }
+  if(semOp(semaphoreId, 0, 1)==-1)
+  {
+    perror("Errore operazione semafori");
+    RoutineChiusura(-1);
+  }
+
+  printf("In attesa dell'altro client\n");
+  if (argc == 3) // client vuole andare contro il computer
+  {
+    if (*argv[2] == '*') {
+      printf("Hai deciso di andare contro un computer\n");
+      //client manda segnale al Server di creare un bot
+      gioco->giocatore1.state = -98;
+      kill(gioco->processoServer,SIGUSR2);
+    }
+    if(*argv[2] == 'H')
+    {
+      if(gioco->giocatore2.playerProcess==-1)
+      {
+        gioco->giocatore1.state = -98;
+        kill(gioco->processoServer,SIGUSR2);
+      }
+      PcFunction();
+    }
+  }
+  if(semOp(semaphoreId, 4, 0)==-1)
+  {
+    perror("Errore operazione semaforo");
+    RoutineChiusura(-1);
+  }
+  printf("Partita iniziata\n");
+  while (1) {
+    semOp(semaphoreId, numGiocatore, 0);
+    CancellaSchermo();
+    if (messaggioDaStampare == 1) {
+      printf("Scaduto tempo per l'altro client\n");
+      messaggioDaStampare = 0;
+    }
+    printf("E il tuo turno: ");
+    if(numGiocatore==2)
+    {
+      printf("(%c)\n",gioco->giocatore1.playerSymbol);
+    }
+    if(numGiocatore==3)
+    {
+      printf("(%c)\n",gioco->giocatore2.playerSymbol);
+    }
+    DrawBoard();
+    int moveMade;
+    validMove = -1;
+    scanf("%d", &moveMade); 
+    if ((!(moveMade < 1 || moveMade > 9))) {
+      char charMade = moveMade + 48;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++) {
+          if (gioco->Board[i][j] == charMade) {
+            validMove = 1;
+            if (numGiocatore == 2)
+              gioco->Board[i][j] = gioco->giocatore1.playerSymbol;
+            if (numGiocatore == 3)
+              gioco->Board[i][j] = gioco->giocatore2.playerSymbol;
+          }
+        }
+    }
+    if (validMove == -1) {
+      printf("Mossa non valida, skip turn\n");
+    }
+    CancellaSchermo();
+    printf("FINE TURNO\n\n");
+    printf("-----------------\n");
+    DrawBoard();
+    if(semOp(semaphoreId, numGiocatore, 1)==-1)
+    {
+      perror("Errore operazione semaforo");
+      Resa();
+    }
+    if(semOp(semaphoreId, 5, 1)==-1)
+    {
+      perror("Errore operazione semaforo");
+      Resa();
+    }
+  }
+}
+
 void Resa() {
   printf("Ti sei arreso!\n");
   // manda segnale al server
-  pid_t processoServer = gioco->processoServer;
+  
   if (numGiocatore == 2) // giocatore1 si è arreso
   {
     gioco->giocatore1.state = -1;
@@ -38,12 +208,12 @@ void Resa() {
   if (numGiocatore == 3) {
     gioco->giocatore2.state = -1;
   }
-  UnSharedBlock(gioco);
-  kill(processoServer, SIGUSR2);
-  exit(EXIT_SUCCESS);
+  RoutineChiusura(SIGUSR2);
 }
 
 void TerminazioneClient(int sig) {
+  CancellaSchermo();
+  DrawBoard();
   if (numGiocatore == 2) {
     if (gioco->giocatore1.state == 1) // partita vinta
     {
@@ -95,10 +265,7 @@ void TerminazioneClient(int sig) {
   if (numGiocatore == 3) {
     gioco->giocatore2.playerProcess = -1;
   }
-  pid_t server = gioco->processoServer;
-  UnSharedBlock(gioco);
-  kill(server, SIGUSR1);
-  exit(EXIT_SUCCESS);
+  RoutineChiusura(SIGUSR1);
 }
 
 void DrawBoard() {
@@ -147,7 +314,6 @@ void PcFunction() {
 
   while (1) {
     semOp(semaphoreId, numGiocatore, 0);
-    int moveMade;
     validMove = -1;
     // prendi una mossa random, controlla se va bene
     while (validMove == -1) {
@@ -168,100 +334,38 @@ void PcFunction() {
     semOp(semaphoreId, 5, 1);
   }
 }
-int main(int argc, char *argv[]) {
-  pid_t test;
-  signal(SIGUSR1, TerminazioneClient);
-  signal(SIGINT, Resa);
-  signal(SIGUSR2, AzioneServer);
-  semOp(semaphoreId, 1, -1);
-  key_t semKey = ftok("test", 1);
-  gioco = LinkSharedBlock("test", sizeof(InfoGioco));
-  isPc = 0;
-  
-  // controlla se almeno uno dei pidGiocatore della memoria condivisa è uguale
-  // ad 1. Se tutti e 2 sono diversi, allora questo è un terzo client
-  if (gioco->giocatore1.playerProcess != -1 &&
-      gioco->giocatore2.playerProcess != -1) {
-    errExit("Ci sono giò 2 client in esecuzione!");
-    UnSharedBlock(gioco);
-    return 0;
-  }
 
-  semaphoreId = semget(semKey, 4, 0644);
-  
-  // modifica segnali
-
-  if (gioco->giocatore1.playerProcess == -1) {
-    gioco->giocatore1.playerProcess = getpid();
-    strcpy(gioco->giocatore1.playerName, argv[1]);
-    numGiocatore = 2;
-    gioco->giocatore1.state = 0;
-    
-  } else if (gioco->giocatore2.playerProcess == -1) {
-    gioco->giocatore2.playerProcess = getpid();
-    numGiocatore = 3;
-    gioco->giocatore2.state = 0;
-    strcpy(gioco->giocatore2.playerName, argv[1]);
-  } else {
-    errExit("Si è verificato un errore");
-  }
-  semOp(semaphoreId, 1, 1);
-  semOp(semaphoreId, 0, 1);
-
-  printf("In attesa dell'altro client\n");
-  if (argc == 3) // client vuole andare contro il computer
+void RoutineChiusura(int signal)
+{
+  int server = gioco->processoServer;
+  if(server==0)
   {
-    if (*argv[2] == 'T') {
-      printf("Hai deciso di andare contro un computer\n");
-      //client manda segnale al Server di creare un bot
-      gioco->giocatore1.state = -98;
-      kill(gioco->processoServer,SIGUSR2);
-    }
-    if(*argv[2] == 'H')
+    if(DestroySharedBlock("test")==-1)
     {
-      if(gioco->giocatore2.playerProcess==-1)
-      {
-        gioco->giocatore1.state = -98;
-        kill(gioco->processoServer,SIGUSR2);
-      }
-        
-      PcFunction();
+      perror("Errore distruzione memoria condivisa");
+      exit(EXIT_FAILURE);
     }
   }
-  semOp(semaphoreId, 4, 0);
-  printf("Partita iniziata\n");
-  while (1) {
-    semOp(semaphoreId, numGiocatore, 0);
-    system("clear");
-    if (messaggioDaStampare == 1) {
-      printf("Scaduto tempo per l'altro client\n");
-      messaggioDaStampare = 0;
-    }
-    printf("E il tuo turno: \n");
-    DrawBoard();
-    int moveMade;
-    validMove = -1;
-    scanf("%d", &moveMade); 
-    if ((!(moveMade < 1 || moveMade > 9))) {
-      char charMade = moveMade + 48;
-      for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++) {
-          if (gioco->Board[i][j] == charMade) {
-            validMove = 1;
-            if (numGiocatore == 2)
-              gioco->Board[i][j] = gioco->giocatore1.playerSymbol;
-            if (numGiocatore == 3)
-              gioco->Board[i][j] = gioco->giocatore2.playerSymbol;
-          }
-        }
-    }
-    if (validMove == -1) {
-      printf("Mossa non valida, skip turn\n");
-    }
-    printf("FINE TURNO\n\n");
-    printf("-----------------\n");
-    semOp(semaphoreId, numGiocatore, 1);
-    semOp(semaphoreId, 5, 1);
+  if(UnSharedBlock(gioco)==-1)
+  {
+    perror("Errore chiusura memoria condivisa");
+    exit(EXIT_FAILURE);
   }
-  return 0;
+  if(signal!=-1)
+    kill(server, signal);
+  exit(EXIT_SUCCESS);
+}
+void CancellaSchermo()
+{
+  pid_t cancellaId = fork();
+  if(cancellaId==-1)
+  {
+    perror("Errore creazione figlio cancella schermo");
+    Resa();
+  }
+  if(cancellaId==0)
+  {
+    execl("/bin/clear","/bin/clear",(char *)NULL);
+  }
+  wait(NULL);
 }
