@@ -402,7 +402,7 @@ void AzioneClient(int sig) {
   }
 }
 void TimerScaduto(int sig) {
-  printf("Timer scaduto. Salta turno\n");
+  printf("Timer scaduto. Partita finita\n");
   if (gioco->whosTurn == -1) // timer giocatore 1 scaduto
   {
     gioco->giocatore1.state = 1;

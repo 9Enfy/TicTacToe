@@ -63,7 +63,12 @@ int main(int argc, char *argv[]) {
   {
     perror("Errore modifica segnale");
     RoutineChiusura(-1);
-  } 
+  }
+  if(ModificaFunzioneSegnale(SIGHUP, Resa)==-1)
+  {
+    perror("Errore modifica segnale");
+    RoutineChiusura(-1);
+  }
   key_t semKey = ftok("test", 0);
   if(semKey==-1)
   {
