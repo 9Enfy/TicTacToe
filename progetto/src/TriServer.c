@@ -46,6 +46,22 @@ int main(int argc, char *argv[]) {
   if (argc != 4) {
     StampaEChiudiErrore("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
   }
+  if(access("test",F_OK)==-1)
+  {
+    pid_t pidfiglio = fork();
+    if(pidfiglio==-1)
+    {
+      StampaEChiudiErrore("Errore creazione figlio touch");
+    }
+    if(pidfiglio==0)
+    {
+      if(execl("/bin/touch","/bin/touch","test",(char*)NULL))
+      {
+        StampaEChiudiErrore("Errore comando touch");
+      }
+    }
+    wait(NULL);
+  }
   semKey = ftok("test", 0);
   if(semKey==-1)
   {
@@ -275,6 +291,7 @@ void preChiusuraClient(int sig) {
   clientCloseTimes++;
 }
 void RoutineChiusura() {
+  int chiusuraBuona=1;
   // manda ai processi client il segnale di chiusure (SIGUSR1)
   if (gioco->giocatore1.playerProcess != -1)
     kill(gioco->giocatore1.playerProcess, SIGUSR1);
@@ -286,15 +303,36 @@ void RoutineChiusura() {
   if(DestroySharedBlock("test")==-1)
   {
     perror("Errore distruzione memoria");
-    exit(EXIT_FAILURE);
+    chiusuraBuona=0;
   }
   // elimina semafori
   if(semctl(semaphoreId, 0, IPC_RMID)==-1)
   {
     perror("Errore distruzione semafori");
+    chiusuraBuona=0;
+  }
+  pid_t figlio=fork();
+  if(figlio==-1)
+  {
+    perror("Errore creazione figlio");
+    chiusuraBuona=0;
+  }
+  if(figlio==0)
+  {
+    if(execl("/bin/rm","/bin/rm","-f","test",(char*)NULL)==-1)
+    {
+      perror("Errore comando rm");
+      chiusuraBuona=0;
+    }
+  }
+  if(chiusuraBuona==1)
+  {
+    exit(EXIT_SUCCESS);
+  }
+  else
+  {
     exit(EXIT_FAILURE);
   }
-  exit(EXIT_SUCCESS);
 }
 void StampaEChiudiErrore(char*reason)
 {
