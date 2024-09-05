@@ -1,3 +1,12 @@
+/************************************
+*VR489009
+*Corato Francesco
+*
+*VR488626
+*Sinico Enrico
+*
+*2024-09-09
+*************************************/
 #include "errExit.h"
 
 #include <stdio.h>

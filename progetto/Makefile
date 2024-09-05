@@ -1,3 +1,12 @@
+#************************************
+#VR489009
+#Corato Francesco
+#
+#VR488626
+#Sinico Enrico
+#
+#2024-09-09
+#************************************#
 NAMES= TriServer TriClient
 CFLAGS=-Wall -std=gnu99 -g
 INCLUDES=-I./inc

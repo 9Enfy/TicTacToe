@@ -1,3 +1,12 @@
+/************************************
+*VR489009
+*Corato Francesco
+*
+*VR488626
+*Sinico Enrico
+*
+*2024-09-09
+*************************************/
 #include "../inc/SharedMemory.h"
 #include "../inc/errExit.h"
 #include "../inc/semaphore.h"
@@ -111,12 +120,12 @@ int main(int argc, char *argv[]) {
   if(semOp(semaphoreId, 1, 1)==-1)
   {
     perror("Errore operazione semafori");
-    RoutineChiusura(-1);
+    Resa();
   }
   if(semOp(semaphoreId, 0, 1)==-1)
   {
     perror("Errore operazione semafori");
-    RoutineChiusura(-1);
+    Resa();
   }
 
   printf("In attesa dell'altro client\n");
@@ -141,7 +150,7 @@ int main(int argc, char *argv[]) {
   if(semOp(semaphoreId, 4, 0)==-1)
   {
     perror("Errore operazione semaforo");
-    RoutineChiusura(-1);
+    Resa();
   }
   printf("Partita iniziata\n");
   while (1) {

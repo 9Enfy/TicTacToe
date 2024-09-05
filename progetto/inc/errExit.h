@@ -1,3 +1,12 @@
+/************************************
+*VR489009
+*Corato Francesco
+*
+*VR488626
+*Sinico Enrico
+*
+*2024-09-09
+*************************************/
 #ifndef _ERREXIT_HH
 #define _ERREXIT_HH
 
