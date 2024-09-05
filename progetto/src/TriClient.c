@@ -48,6 +48,7 @@ void CancellaSchermo();
 
 
 int main(int argc, char *argv[]) {
+  int isBot=0;
   if(ModificaFunzioneSegnale(SIGUSR1, TerminazioneClient)==-1)
   {
     perror("Errore modifica segnale");
@@ -111,6 +112,8 @@ int main(int argc, char *argv[]) {
   } else if (gioco->giocatore2.playerProcess == -1) {
     gioco->giocatore2.playerProcess = getpid();
     numGiocatore = 3;
+    if(gioco->giocatore2.state==-100)
+      isBot=1;
     gioco->giocatore2.state = 0;
     strcpy(gioco->giocatore2.playerName, argv[1]);
   } else {
@@ -134,17 +137,33 @@ int main(int argc, char *argv[]) {
     if (*argv[2] == '*') {
       printf("Hai deciso di andare contro un computer\n");
       //client manda segnale al Server di creare un bot
-      gioco->giocatore1.state = -98;
-      kill(gioco->processoServer,SIGUSR2);
-    }
-    if(*argv[2] == 'H')
-    {
-      if(gioco->giocatore2.playerProcess==-1)
+      if(gioco->giocatore2.playerProcess!=-1)
+      {
+        printf("Tuttavia c'è già un client in attesa. Giocherai contro un umano\n");
+      }
+      else
       {
         gioco->giocatore1.state = -98;
         kill(gioco->processoServer,SIGUSR2);
       }
-      PcFunction();
+      
+    }
+    if(*argv[2] == 'H')
+    {
+      if(gioco->giocatore2.playerProcess==getpid()&&isBot==1)
+      {
+          PcFunction();
+      }else
+      {
+        printf("Impossibile fare bot vs bot: c'è già un giocatore in attesa\n");
+      }
+      if(gioco->giocatore2.playerProcess==-1 && gioco->giocatore1.playerProcess==getpid()) //giocatore 1 fa bot vs bot
+      {
+        gioco->giocatore1.state = -98;
+        kill(gioco->processoServer,SIGUSR2);
+        PcFunction();
+      }
+
     }
   }
   if(semOp(semaphoreId, 4, 0)==-1)
@@ -346,23 +365,22 @@ void PcFunction() {
 
 void RoutineChiusura(int signal)
 {
-  int server = gioco->processoServer;
-  if(server==0)
+ 
+ int detachEffettuato=1;
+  if(gioco!=NULL)
   {
-    if(DestroySharedBlock("test")==-1)
+    int server = gioco->processoServer;
+    if(UnSharedBlock(gioco)==-1)
     {
-      perror("Errore distruzione memoria condivisa");
-      exit(EXIT_FAILURE);
+      perror("Errore chiusura memoria condivisa");
+      detachEffettuato=0;
     }
+    if(signal!=-1)
+      kill(server, signal);
   }
-  if(UnSharedBlock(gioco)==-1)
-  {
-    perror("Errore chiusura memoria condivisa");
-    exit(EXIT_FAILURE);
-  }
-  if(signal!=-1)
-    kill(server, signal);
-  exit(EXIT_SUCCESS);
+  if(detachEffettuato==1)  
+    exit(EXIT_SUCCESS);
+  exit(EXIT_FAILURE);
 }
 void CancellaSchermo()
 {

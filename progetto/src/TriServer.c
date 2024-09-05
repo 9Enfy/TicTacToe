@@ -40,8 +40,10 @@ void preRoutineChiusura(int sig);
 void AzioneClient(int sig);
 void TimerScaduto(int sig);
 void CancellaSchermo();
+void ChiusuraTerminale();
 
 int main(int argc, char *argv[]) {
+  clientCloseTimes=0;
   // controlla se il numero di parametri è giusto
   if (argc != 4) {
     StampaEChiudiErrore("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
@@ -116,6 +118,10 @@ int main(int argc, char *argv[]) {
   if(ModificaFunzioneSegnale(SIGALRM, *TimerScaduto)==-1)
   {
     StampaEChiudiErrore("Errore modifica SIGALRM");
+  }
+  if(ModificaFunzioneSegnale(SIGHUP,*ChiusuraTerminale)==-1)
+  {
+    StampaEChiudiErrore("Errore modifica SIGHUP");
   }
   int timer = atoi(argv[1]);
   if (timer < 0) {
@@ -297,8 +303,6 @@ void RoutineChiusura() {
     kill(gioco->giocatore1.playerProcess, SIGUSR1);
   if (gioco->giocatore2.playerProcess != -1)
     kill(gioco->giocatore2.playerProcess, SIGUSR1);
-  // aspetta che entrambi i client si chiudano
-
   // chiudi aree di memoria utilizzate
   if(DestroySharedBlock("test")==-1)
   {
@@ -380,6 +384,7 @@ void AzioneClient(int sig) {
     gioco->giocatore1.state = 0;
     pid_t pid;
     pid = fork();
+    gioco->giocatore2.state = -100;
     if(pid==0)
     {
       //printf("FIGLIO\n");
@@ -426,4 +431,10 @@ void CancellaSchermo()
     execl("/bin/clear","/bin/clear",(char *)NULL);
   }
   wait(NULL);
+}
+void ChiusuraTerminale()
+{
+    CancellaSchermo();
+    printf("Terminazione server...\n");
+    RoutineChiusura();
 }
