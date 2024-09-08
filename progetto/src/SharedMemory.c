@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define IPC_ERROR -1
 
@@ -48,4 +49,17 @@ int DestroySharedBlock(char *filename) {
   if (id == IPC_ERROR)
     return IPC_ERROR;
   return shmctl(id, 0, NULL) != IPC_ERROR;
+}
+
+int SharedBlockExist(char *filename,int size)
+{
+  key_t key;
+  key = ftok(filename, 0);
+  if (shmget(key, size, 0)==-1) {
+    if (ENOENT == errno) {
+        return 0;
+    }
+    return -1;
+}
+return 1;
 }

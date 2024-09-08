@@ -39,5 +39,5 @@ struct InfoGioco {
 InfoGioco *LinkSharedBlock(char *filename, int size);
 int UnSharedBlock(InfoGioco *block);
 int DestroySharedBlock(char *filename);
-
+int SharedBlockExist(char *filename,int size);
 #endif

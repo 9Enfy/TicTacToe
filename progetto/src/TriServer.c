@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 int cTTimes;
 int clientCloseTimes;
@@ -46,7 +47,8 @@ int main(int argc, char *argv[]) {
   clientCloseTimes=0;
   // controlla se il numero di parametri è giusto
   if (argc != 4) {
-    StampaEChiudiErrore("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
+    perror("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
+    exit(EXIT_FAILURE);
   }
   if(access("test",F_OK)==-1)
   {
@@ -304,17 +306,29 @@ void RoutineChiusura() {
   if (gioco->giocatore2.playerProcess != -1)
     kill(gioco->giocatore2.playerProcess, SIGUSR1);
   // chiudi aree di memoria utilizzate
-  if(DestroySharedBlock("test")==-1)
+  int MemoriaCondivisaEsiste = 1;
+  int SemaforoEsiste = 1;
+  errno = 0;
+  if(SharedBlockExist("test",sizeof(InfoGioco))==1) //controlla se esiste l'area di memoria
   {
-    perror("Errore distruzione memoria");
-    chiusuraBuona=0;
+    if(DestroySharedBlock("test")==-1)
+    {
+      perror("Errore distruzione memoria");
+      chiusuraBuona=0;
+    }
   }
+  
   // elimina semafori
-  if(semctl(semaphoreId, 0, IPC_RMID)==-1)
+  int semaphoreId_temp = semget(semKey, 6, 0644 | IPC_CREAT|IPC_EXCL);
+  if((semaphoreId_temp==-1 && errno == EEXIST))
   {
-    perror("Errore distruzione semafori");
-    chiusuraBuona=0;
+    if(semctl(semaphoreId, 0, IPC_RMID)==-1)
+    {
+      perror("Errore distruzione semafori");
+      chiusuraBuona=0;
+    }
   }
+  
   pid_t figlio=fork();
   if(figlio==-1)
   {
