@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   clientCloseTimes=0;
   // controlla se il numero di parametri è giusto
   if (argc != 4) {
-    printf("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
+    printf("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]\n");
     exit(EXIT_FAILURE);
   }
   //controlla se i parametri dei simboli sono uguali ad una cifra
