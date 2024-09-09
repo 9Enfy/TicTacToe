@@ -311,8 +311,6 @@ void RoutineChiusura() {
   if (gioco->giocatore2.playerProcess != -1)
     kill(gioco->giocatore2.playerProcess, SIGUSR1);
   // chiudi aree di memoria utilizzate
-  int MemoriaCondivisaEsiste = 1;
-  int SemaforoEsiste = 1;
   errno = 0;
   if(SharedBlockExist("test",sizeof(InfoGioco))==1) //controlla se esiste l'area di memoria
   {
@@ -359,7 +357,7 @@ void RoutineChiusura() {
 }
 void StampaEChiudiErrore(char*reason)
 {
-  printf(reason);
+  printf("%s", reason);
   RoutineChiusura();
 }
 
@@ -460,5 +458,5 @@ void ChiusuraTerminale()
 
 int IsCifra(char who)
 {
-  return (who=='1'||who=='2'||who=='3'||who=='4'||who=='5'||who=='6'||who=='7'||who=='8'||who=='9'||who=='0'||who=='1');
+  return (who=='1'||who=='2'||who=='3'||who=='4'||who=='5'||who=='6'||who=='7'||who=='8'||who=='9'||who=='0');
 }
