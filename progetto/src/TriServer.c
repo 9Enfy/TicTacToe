@@ -42,14 +42,22 @@ void AzioneClient(int sig);
 void TimerScaduto(int sig);
 void CancellaSchermo();
 void ChiusuraTerminale();
+int IsCifra(char who);
 
 int main(int argc, char *argv[]) {
   clientCloseTimes=0;
   // controlla se il numero di parametri è giusto
   if (argc != 4) {
-    perror("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
+    printf("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
     exit(EXIT_FAILURE);
   }
+  //controlla se i parametri dei simboli sono uguali ad una cifra
+  if(IsCifra(argv[2][0]) || IsCifra(argv[3][0]))
+  {
+    printf("Errore: i simboli non possono essere cifre\n");
+    exit(EXIT_FAILURE);
+  }
+  //controlla se il file test esiste o no (creare con touch un nuovo file test)
   if(access("test",F_OK)==-1)
   {
     pid_t pidfiglio = fork();
@@ -129,7 +137,7 @@ int main(int argc, char *argv[]) {
   if (timer < 0) {
     StampaEChiudiErrore("Timer può essere solo positivo!");
   }
-  // crea N[] semafori. Saranno subito inizializzati ad 1
+  // crea 6 semafori.
   semaphoreId = semget(semKey, 6, 0644 | IPC_CREAT);
   /*
    *sem[0] viene usato dal server per aspettare il collegamento di 2 client
@@ -150,10 +158,6 @@ int main(int argc, char *argv[]) {
 
   if (semctl(semaphoreId, 0 /*ignored*/, SETALL, arg) == -1)
     StampaEChiudiErrore("semctl SETALL failed");
-
-  // crea chiave
-  // mkdir("tmp", S_IRUSR | S_IXUSR);
-  // int fd = open("./tmp/chiave", O_RDWR | O_CREAT | O_EXCL);
 
   // inizializza memoria condivisa
   gioco = LinkSharedBlock("test", sizeof(InfoGioco));
@@ -179,7 +183,7 @@ int main(int argc, char *argv[]) {
   {
     StampaEChiudiErrore("Errore operazione con semaforo");
   }
-  // il server riprende esecuzione quando sem[0] è uguale a 0 (nei client viene chiamata 2 volte semOP(0))
+  // il server riprende esecuzione quando sem[0] è uguale a 0 (nei client viene chiamata 2 volte semOP sul semaforo(0))
   if(semOp(semaphoreId, 0, -2)==-1)
   {
     StampaEChiudiErrore("Errore operazione con semaforo");
@@ -236,6 +240,7 @@ int main(int argc, char *argv[]) {
       }
     }
     alarm(timer);
+
     if(semOp(semaphoreId, 5, -1))
     {
       StampaEChiudiErrore("Errore operazione con semaforo");
@@ -354,7 +359,7 @@ void RoutineChiusura() {
 }
 void StampaEChiudiErrore(char*reason)
 {
-  perror(reason);
+  printf(reason);
   RoutineChiusura();
 }
 
@@ -451,4 +456,9 @@ void ChiusuraTerminale()
     CancellaSchermo();
     printf("Terminazione server...\n");
     RoutineChiusura();
+}
+
+int IsCifra(char who)
+{
+  return (who=='1'||who=='2'||who=='3'||who=='4'||who=='5'||who=='6'||who=='7'||who=='8'||who=='9'||who=='0'||who=='1');
 }

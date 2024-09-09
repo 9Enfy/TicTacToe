@@ -37,7 +37,23 @@ int isPc;
  * client si "arrende" e la vincita viene annunciata all'altro client
  *
  */
+/*
+Un client si può trovare in vari stati (memorizzati in memoria condivisa). Di seguito il significato di ciascun stato
+0 = stato di default una volta che il client è inizializzato
+1 = il client ha vinto
+2 = il client ha perso
+3 = il client ha pareggiato
+4 = il timer dell'altro client è scaduto
+-4 = il timer è scaduto
 
+-1 = il client si è arreso
+-2 = il client non è stato ancora inizializzato
+-98 = il client richiede al server (attraverso SIGUSR2) di giocare contro un bot
+-100 = Richiesto dal server per far diventare il client un bot
+
+
+
+*/
 void Resa();
 void TerminazioneClient(int sig);
 void DrawBoard();
@@ -107,7 +123,8 @@ int main(int argc, char *argv[]) {
     perror("Errore ricevimento semafori");
     Resa();
   }
-
+  //il client controlla gli id dei processi client in memoria condivisa. Se un processo è uguale a -1, significa che deve ancora
+  //essere inizializzato. Il client quindi memorizza i suoi dati all'interno della area di memoria dedicata al processo.
   if (gioco->giocatore1.playerProcess == -1) {
     gioco->giocatore1.playerProcess = getpid();
     strcpy(gioco->giocatore1.playerName, argv[1]);
@@ -122,7 +139,7 @@ int main(int argc, char *argv[]) {
     gioco->giocatore2.state = 0;
     strcpy(gioco->giocatore2.playerName, argv[1]);
   } else {
-    perror("Si è verificato un errore");
+    printf("Si è verificato un errore");
     RoutineChiusura(-1);
   }
   if(semOp(semaphoreId, 1, 1)==-1)
