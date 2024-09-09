@@ -64,44 +64,48 @@ void CancellaSchermo();
 
 
 int main(int argc, char *argv[]) {
+  if(argc < 2 || argc > 3){
+    printf("Numero argomenti errato: TriClient <nome> <opzioni [\\*, H](facoltativo)>\n");
+    RoutineChiusura(-1);
+  }
   int isBot=0;
   if(ModificaFunzioneSegnale(SIGUSR1, TerminazioneClient)==-1)
   {
-    perror("Errore modifica segnale");
+    printf("Errore modifica segnale\n");
     RoutineChiusura(-1);
   }
   if(ModificaFunzioneSegnale(SIGINT, Resa)==-1)
   {
-    perror("Errore modifica segnale");
+    printf("Errore modifica segnale\n");
     RoutineChiusura(-1);
   }
   if(ModificaFunzioneSegnale(SIGUSR2, AzioneServer)==-1)
   {
-    perror("Errore modifica segnale");
+    printf("Errore modifica segnale\n");
     RoutineChiusura(-1);
   }
   if(ModificaFunzioneSegnale(SIGHUP, Resa)==-1)
   {
-    perror("Errore modifica segnale");
+    printf("Errore modifica segnale\n");
     RoutineChiusura(-1);
   }
   key_t semKey = ftok("test", 0);
   if(semKey==-1)
   {
-    perror("Errore creazione chiave");
+    printf("Errore creazione chiave\n");
     RoutineChiusura(-1);
   }
   gioco = LinkSharedBlock("test", sizeof(InfoGioco));
   if(gioco==NULL)
   {
-    perror("Errore ricevimento memoria condivisa");
+    printf("Errore ricevimento memoria condivisa\n");
     RoutineChiusura(-1);
   }
   isPc = 0;
   //controlla se il server è attivo
   if(gioco->processoServer==0)
   {
-    perror("Server non attivo");
+    printf("Server non attivo\n");
     RoutineChiusura(-1);
   }
   
@@ -112,15 +116,15 @@ int main(int argc, char *argv[]) {
     errExit("Ci sono giò 2 client in esecuzione!");
     if(UnSharedBlock(gioco)==-1)
     {
-      perror("Errore distaccamento memoria condivisa");
+      printf("Errore distaccamento memoria condivisa\n");
       RoutineChiusura(-1);
     }
   }
 
-  semaphoreId = semget(semKey, 4, 0644);
+  semaphoreId = semget(semKey, 7, 0644);
   if(semaphoreId==-1)
   {
-    perror("Errore ricevimento semafori");
+    printf("Errore ricevimento semafori\n");
     Resa();
   }
   //il client controlla gli id dei processi client in memoria condivisa. Se un processo è uguale a -1, significa che deve ancora
@@ -139,17 +143,17 @@ int main(int argc, char *argv[]) {
     gioco->giocatore2.state = 0;
     strcpy(gioco->giocatore2.playerName, argv[1]);
   } else {
-    printf("Si è verificato un errore");
+    printf("Si è verificato un errore\n");
     RoutineChiusura(-1);
   }
   if(semOp(semaphoreId, 1, 1)==-1)
   {
-    perror("Errore operazione semafori");
+    printf("Errore operazione semafori\n");
     Resa();
   }
   if(semOp(semaphoreId, 0, 1)==-1)
   {
-    perror("Errore operazione semafori");
+    printf("Errore operazione semafori\n");
     Resa();
   }
 
@@ -190,7 +194,7 @@ int main(int argc, char *argv[]) {
   }
   if(semOp(semaphoreId, 4, 0)==-1)
   {
-    perror("Errore operazione semaforo");
+    printf("Errore operazione semaforo\n");
     Resa();
   }
   printf("Partita iniziata\n");
@@ -227,37 +231,39 @@ int main(int argc, char *argv[]) {
           }
         }
     }
+    CancellaSchermo();
     if (validMove == -1) {
       printf("Mossa non valida, skip turn\n");
     }
-    CancellaSchermo();
     printf("FINE TURNO\n\n");
     printf("-----------------\n");
     DrawBoard();
     if(semOp(semaphoreId, numGiocatore, 1)==-1)
     {
-      perror("Errore operazione semaforo");
+      printf("Errore operazione semaforo\n");
       Resa();
     }
     if(semOp(semaphoreId, 5, 1)==-1)
     {
-      perror("Errore operazione semaforo");
+      printf("Errore operazione semaforo\n");
       Resa();
     }
   }
 }
 
 void Resa() {
+  semOp(semaphoreId,6,-1);
   printf("Ti sei arreso!\n");
   // manda segnale al server
   
   if (numGiocatore == 2) // giocatore1 si è arreso
-  {
+  { 
     gioco->giocatore1.state = -1;
   }
   if (numGiocatore == 3) {
     gioco->giocatore2.state = -1;
   }
+  semOp(semaphoreId,6,1);
   RoutineChiusura(SIGUSR2);
 }
 
@@ -410,7 +416,7 @@ void RoutineChiusura(int signal)
     int server = gioco->processoServer;
     if(UnSharedBlock(gioco)==-1)
     {
-      perror("Errore chiusura memoria condivisa");
+      printf("Errore chiusura memoria condivisa\n");
       detachEffettuato=0;
     }
     if(signal!=-1)
@@ -425,7 +431,7 @@ void CancellaSchermo()
   pid_t cancellaId = fork();
   if(cancellaId==-1)
   {
-    perror("Errore creazione figlio cancella schermo");
+    printf("Errore creazione figlio cancella schermo\n");
     Resa();
   }
   if(cancellaId==0)

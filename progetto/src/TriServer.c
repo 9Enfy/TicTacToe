@@ -57,6 +57,11 @@ int main(int argc, char *argv[]) {
     printf("Errore: i simboli non possono essere cifre\n");
     exit(EXIT_FAILURE);
   }
+  int timer = atoi(argv[1]);
+  if (timer < 0) {
+    printf("Timer può essere solo positivo!\n");
+    exit(EXIT_FAILURE);
+  }
   //controlla se il file test esiste o no (creare con touch un nuovo file test)
   if(access("test",F_OK)==-1)
   {
@@ -133,12 +138,9 @@ int main(int argc, char *argv[]) {
   {
     StampaEChiudiErrore("Errore modifica SIGHUP");
   }
-  int timer = atoi(argv[1]);
-  if (timer < 0) {
-    StampaEChiudiErrore("Timer può essere solo positivo!");
-  }
+  
   // crea 6 semafori.
-  semaphoreId = semget(semKey, 6, 0644 | IPC_CREAT);
+  semaphoreId = semget(semKey, 7, 0644 | IPC_CREAT);
   /*
    *sem[0] viene usato dal server per aspettare il collegamento di 2 client
    *sem[1] viene usato dai client per inizializzare la connessione con il server
@@ -152,7 +154,7 @@ int main(int argc, char *argv[]) {
 
   if (semaphoreId == -1)
     StampaEChiudiErrore("semget failed");
-  unsigned short semInitVal[] = {0, 0, 1, 1, 1, 0};
+  unsigned short semInitVal[] = {0, 0, 1, 1, 1, 0,1};
   union semun arg;
   arg.array = semInitVal;
 
@@ -197,6 +199,7 @@ int main(int argc, char *argv[]) {
   // inizia la partita
   int isThereAWinner;
   while (1) {
+    semOp(semaphoreId,6,-1);
     // controlla il campo per determinare fine del gioco
     isThereAWinner = CheckBoard(gioco);
     if (isThereAWinner == 1) {
@@ -224,6 +227,7 @@ int main(int argc, char *argv[]) {
       kill(gioco->giocatore2.playerProcess, SIGUSR1);
       RoutineChiusura();
     }
+    semOp(semaphoreId,6,1);
     // partita continua
     if (gioco->whosTurn == 1) {
       // turno del giocatore1;
@@ -364,7 +368,7 @@ void preRoutineChiusura(int sig) {
   }
   if (cTTimes == 0) // prima volta che si preme ctrl+c
   {
-    printf("Premere un'altra volta ctrl+c per terminare il server!\n");
+    printf("\nPremere un'altra volta ctrl+c per terminare il server!\n");
     cTTimes = 1;
   }
 }
@@ -376,7 +380,7 @@ void AzioneClient(int sig) {
   // all'altro client
   if (gioco->giocatore1.state == -1) {
     // giocatore1 si è arreso
-    printf("giocatore 1 si è arreso");
+    printf("giocatore 1 si è arreso\n");
     gioco->giocatore2.state = 1;
     clientCloseTimes = 1;
     RoutineChiusura();
