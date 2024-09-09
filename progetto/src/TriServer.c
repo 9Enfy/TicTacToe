@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   clientCloseTimes=0;
   // controlla se il numero di parametri è giusto
   if (argc != 4) {
-    printf("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]\n");
+    printf("Errore: errato numero di parametri. \n ./TriServer [secondi di timeout] [carattere per giocatore 1] [carattere per giocatore 2]");
     exit(EXIT_FAILURE);
   }
   //controlla se i parametri dei simboli sono uguali ad una cifra
@@ -271,22 +271,14 @@ void StartBoard(InfoGioco *_gioco, char *_argv[]) {
 
 int CheckBoard(InfoGioco *gioco) {
   // controlla se qualcuno ha vinto
-  if ((gioco->Board[0][0] == gioco->Board[0][1] &&
-       gioco->Board[0][1] == gioco->Board[0][2]) ||
-      (gioco->Board[1][0] == gioco->Board[1][1] &&
-       gioco->Board[1][1] == gioco->Board[1][2]) ||
-      (gioco->Board[2][0] == gioco->Board[2][1] &&
-       gioco->Board[2][1] == gioco->Board[2][2]) ||
-      (gioco->Board[0][0] == gioco->Board[1][0] &&
-       gioco->Board[1][0] == gioco->Board[2][0]) ||
-      (gioco->Board[0][1] == gioco->Board[1][1] &&
-       gioco->Board[1][1] == gioco->Board[2][1]) ||
-      (gioco->Board[0][2] == gioco->Board[1][2] &&
-       gioco->Board[1][2] == gioco->Board[2][2]) ||
-      (gioco->Board[0][0] == gioco->Board[1][1] &&
-       gioco->Board[1][1] == gioco->Board[2][2]) ||
-      (gioco->Board[0][2] == gioco->Board[1][1] &&
-       gioco->Board[1][1] == gioco->Board[2][0]))
+  if ((gioco->Board[0][0] == gioco->Board[0][1] && gioco->Board[0][1] == gioco->Board[0][2]) ||
+      (gioco->Board[1][0] == gioco->Board[1][1] && gioco->Board[1][1] == gioco->Board[1][2]) ||
+      (gioco->Board[2][0] == gioco->Board[2][1] && gioco->Board[2][1] == gioco->Board[2][2]) ||
+      (gioco->Board[0][0] == gioco->Board[1][0] && gioco->Board[1][0] == gioco->Board[2][0]) ||
+      (gioco->Board[0][1] == gioco->Board[1][1] && gioco->Board[1][1] == gioco->Board[2][1]) ||
+      (gioco->Board[0][2] == gioco->Board[1][2] && gioco->Board[1][2] == gioco->Board[2][2]) ||
+      (gioco->Board[0][0] == gioco->Board[1][1] && gioco->Board[1][1] == gioco->Board[2][2]) ||
+      (gioco->Board[0][2] == gioco->Board[1][1] && gioco->Board[1][1] == gioco->Board[2][0]))
     return (gioco->whosTurn * -1);
 
   // controlla se il campo è pieno
@@ -357,7 +349,7 @@ void RoutineChiusura() {
 }
 void StampaEChiudiErrore(char*reason)
 {
-  printf("%s", reason);
+  printf("%s",reason);
   RoutineChiusura();
 }
 
@@ -413,7 +405,7 @@ void AzioneClient(int sig) {
     }
     if(pid==-1)
     {
-      StampaEChiudiErrore("Errore creazione Bot");
+      StampaEChiudiErrore("Errore creazione Bot\n");
     }
     //printf("PADRE\n");
   }
@@ -423,11 +415,11 @@ void TimerScaduto(int sig) {
   if (gioco->whosTurn == -1) // timer giocatore 1 scaduto
   {
     gioco->giocatore1.state = 1;
-      gioco->giocatore2.state = 2;
+      gioco->giocatore2.state = 5;
       
   }
   if (gioco->whosTurn == 1) {
-    gioco->giocatore1.state = 2;
+    gioco->giocatore1.state = 5;
     gioco->giocatore2.state = 1;
     
   }
@@ -441,7 +433,7 @@ void CancellaSchermo()
   pid_t cancellaId = fork();
   if(cancellaId==-1)
   {
-    StampaEChiudiErrore("Errore creazione figlio cancella schermo");
+    StampaEChiudiErrore("Errore creazione figlio cancella schermo\n");
   }
   if(cancellaId==0)
   {

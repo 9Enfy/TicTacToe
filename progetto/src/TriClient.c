@@ -276,6 +276,10 @@ void TerminazioneClient(int sig) {
       {
         printf(" Si è arreso!\n");
       }
+      if(gioco->giocatore2.state == 5)
+      {
+        printf(" Il timer di %s è scaduto\n",gioco->giocatore2.playerName);
+      }
     }
     if (gioco->giocatore1.state == 2) // sconfitta
     {
@@ -283,6 +287,10 @@ void TerminazioneClient(int sig) {
     }
     if (gioco->giocatore1.state == 3) {
       printf("Partita finita in pareggio!\n");
+    }
+    if(gioco->giocatore1.state == 5)
+    {
+      printf("Il tuo timer è scaduto! Hai perso\n");
     }
   }
   if (numGiocatore == 3 && isPc == 0) {
@@ -297,6 +305,10 @@ void TerminazioneClient(int sig) {
       {
         printf(" Si è arreso!\n");
       }
+      if(gioco->giocatore1.state == 5)
+      {
+        printf(" Il timer di %s è scaduto\n",gioco->giocatore1.playerName);
+      }
     }
     if (gioco->giocatore2.state == 2) // sconfitta
     {
@@ -304,6 +316,10 @@ void TerminazioneClient(int sig) {
     }
     if (gioco->giocatore2.state == 3) {
       printf("Partita finita in pareggio!\n");
+    }
+    if(gioco->giocatore2.state == 5)
+    {
+      printf("Il tuo timer è scaduto! Hai perso\n");
     }
   }
   if (isPc == 0)
